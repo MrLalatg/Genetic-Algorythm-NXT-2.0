@@ -1,10 +1,6 @@
 import lejos.nxt.*;
 import lejos.util.*;
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-
-
 
 class indi{
 	LightSensor RLight = new LightSensor(SensorPort.S1);
@@ -15,6 +11,7 @@ class indi{
 	double kd;
 	double ki;
 	double c;
+	String reason;
 	int cross = 0;
 	int ePr = 0;
 	boolean flag = false;
@@ -42,14 +39,14 @@ class indi{
 	}
 	
 	
-	public boolean run() {
+	public void run() {
 		while(cross<2) {
 			pid();
 			if(flag) {
-				return(false);
+				reason = "Fail";
 			}
 		}
-		return(true);
+		reason = "Success";
 	}
 	public indi(double op, double od, double oi, double oc, int opok) {
 		Button.ENTER.addButtonListener(new ButtonListener() {
@@ -71,11 +68,38 @@ class indi{
 	}
 }
 
+class experiment{
+	indi curGen[] = {new indi(1.7, 3.8, 0.003, 30, 1),
+			  		 new indi(1.6, 3.9, 0.003, 35, 1),
+			  		 new indi(1.3, 3.6, 0.004, 28, 1),
+			  		 new indi(1.4, 4.0, 0.001, 31, 1),
+			  		 new indi(1.8, 3.7, 0.002, 40, 1),
+			  		 new indi(1.5, 3.5, 0.005, 29, 1),
+			  		 new indi(1.2, 3.5, 0.003, 32, 1),
+			  		 new indi(1.1, 3.1, 0.006, 45, 1),
+			  		 new indi(1.3, 3.6, 0.004, 28, 1),
+			  		 new indi(1.6, 3.9, 0.003, 34, 1)};
+	indi tempGen[] = {};
+	indi[] selection() {
+		for(int i = 0; i<= curGen.length; i++) {
+			curGen[i].run();
+			if(curGen[i].reason == "Success") {
+				if(tempGen.length==0) {
+					tempGen[1] = curGen[i];
+				} else {
+					tempGen[tempGen.length-1] = curGen[i];
+				}
+			}
+		}
+		
+		return tempGen;
+	}
+}
+
 public class main {
 	
 	public static void main(String[] args) {
-		indi i1 = new indi(1.7, 3.6, 0.003, 30, 1);
-		i1.run();
+		
 	}
 
 }
