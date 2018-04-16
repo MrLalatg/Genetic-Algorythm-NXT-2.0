@@ -1,6 +1,7 @@
 import lejos.nxt.*;
 import lejos.util.*;
 import java.io.*;
+import java.util.*;
 
 class indi{
 	LightSensor RLight = new LightSensor(SensorPort.S1);
@@ -11,6 +12,7 @@ class indi{
 	double kd;
 	double ki;
 	double c;
+	boolean isParent = false;
 	String reason;
 	int cross = 0;
 	int ePr = 0;
@@ -93,6 +95,19 @@ class experiment{
 		}
 		
 		return tempGen;
+	}
+	
+	indi[] cross() {
+		
+	}
+	
+	indi dichC(indi i1, indi i2) {
+		
+	}
+	
+	int[][] choose(indi[] gen) {
+		int result[][];
+		for(int i; i<)
 	}
 }
 
