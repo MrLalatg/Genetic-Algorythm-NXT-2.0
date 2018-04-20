@@ -1,7 +1,17 @@
-import lejos.nxt.*;
-import lejos.util.*;
-import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
+import lejos.nxt.Button;
+import lejos.nxt.ButtonListener;
+import lejos.nxt.LCD;
+import lejos.nxt.LightSensor;
+import lejos.nxt.Motor;
+import lejos.nxt.MotorPort;
+import lejos.nxt.NXTMotor;
+import lejos.nxt.SensorPort;
 
 class indi{
 	LightSensor RLight = new LightSensor(SensorPort.S1);
@@ -12,6 +22,7 @@ class indi{
 	double kd;
 	double ki;
 	double c;
+	
 	boolean isParent = false;
 	String reason;
 	int cross = 0;
@@ -72,15 +83,15 @@ class indi{
 
 class experiment{
 	indi curGen[] = {new indi(1.7, 3.8, 0.003, 30, 1),
-			  		 new indi(1.6, 3.9, 0.003, 35, 1),
-			  		 new indi(1.3, 3.6, 0.004, 28, 1),
-			  		 new indi(1.4, 4.0, 0.001, 31, 1),
-			  		 new indi(1.8, 3.7, 0.002, 40, 1),
-			  		 new indi(1.5, 3.5, 0.005, 29, 1),
-			  		 new indi(1.2, 3.5, 0.003, 32, 1),
-			  		 new indi(1.1, 3.1, 0.006, 45, 1),
-			  		 new indi(1.3, 3.6, 0.004, 28, 1),
-			  		 new indi(1.6, 3.9, 0.003, 34, 1)};
+			  	 new indi(1.6, 3.9, 0.003, 35, 1),
+			  	 new indi(1.3, 3.6, 0.004, 28, 1),
+			  	 new indi(1.4, 4.0, 0.001, 31, 1),
+			  	 new indi(1.8, 3.7, 0.002, 40, 1),
+			  	 new indi(1.5, 3.5, 0.005, 29, 1),
+			  	 new indi(1.2, 3.5, 0.003, 32, 1),
+			  	 new indi(1.1, 3.1, 0.006, 45, 1),
+			  	 new indi(1.3, 3.6, 0.004, 28, 1),
+			  	 new indi(1.6, 3.9, 0.003, 34, 1)};
 	indi tempGen[] = {};
 	indi[] selection() {
 		for(int i = 0; i<= curGen.length; i++) {
@@ -102,13 +113,18 @@ class experiment{
 	}
 	
 	indi dichC(indi i1, indi i2) {
+		indi result;
 		
 	}
 	
-	int[][] choose(indi[] gen) {
-		int result[][];
-		for(int i; i<)
-	}
+//	int[][] choose(indi[] gen) {
+//		int result[][];
+//		if(curGen.length%2 == 0) {
+//			for(int i = 0; i<curGen.length; i++) {
+//				
+//			}
+//		}
+//	}
 }
 
 public class main {
