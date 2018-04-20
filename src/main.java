@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -18,10 +16,9 @@ class indi{
 	LightSensor LLight = new LightSensor(SensorPort.S4);
 	NXTMotor RMotor = new NXTMotor(MotorPort.A);
 	NXTMotor LMotor = new NXTMotor(MotorPort.B);
-	double kp;
-	double kd;
-	double ki;
-	double c;
+	
+	@SuppressWarnings("deprecation")
+	Map<String, Double> coef = new HashMap<String, Double>();
 	
 	boolean isParent = false;
 	String reason;
@@ -40,8 +37,8 @@ class indi{
 		double err = RLight.readValue() - LLight.readValue();
 		i += err;
 		d = ePr-err;
-		pwrL = c + kp*err - kd*d + ki*i;
-		pwrR = c - kp*err + kd*d - ki*i;
+		pwrL = coef.get("c") + coef.get("kp")*err - coef.get("kd")*d + coef.get("ki")*i;
+		pwrR = coef.get("c") - coef.get("kp")*err + coef.get("kd")*d - coef.get("ki")*i;
 		Motor.A.suspendRegulation();
 		Motor.B.suspendRegulation();
 		RMotor.setPower((int) pwrR);
@@ -73,15 +70,16 @@ class indi{
 			}
 		});
 		id = cnt;
-		kp = op;
-		kd = od;
-		ki = oi;
-		c = oc;
+		coef.put("kp", op);
+		coef.put("kd", od);
+		coef.put("ki", oi);
+		coef.put("c", oc);
 		cnt++;
 	}
 }
 
 class experiment{
+	String[] coefNames = {"kp", "kd", "ki", "c"};
 	indi curGen[] = {new indi(1.7, 3.8, 0.003, 30, 1),
 			  	 new indi(1.6, 3.9, 0.003, 35, 1),
 			  	 new indi(1.3, 3.6, 0.004, 28, 1),
@@ -113,18 +111,25 @@ class experiment{
 	}
 	
 	indi dichC(indi i1, indi i2) {
-		indi result;
+		indi result = null;
+		Random rnd = new Random();
+		for(String tcoef : coefNames) {
+			if(rnd.nextInt(2)==0) {
+				result.coef.put(tcoef, i1.coef.get(tcoef)); 
+			}
+		}
 		
+		return result;
 	}
 	
-//	int[][] choose(indi[] gen) {
-//		int result[][];
-//		if(curGen.length%2 == 0) {
-//			for(int i = 0; i<curGen.length; i++) {
-//				
-//			}
-//		}
-//	}
+	int[][] choose(indi[] gen) {
+		int result[][];
+		if(curGen.length%2 == 0) {
+			for(int i = 0; i<curGen.length; i++) {
+				
+			}
+		}
+	}
 }
 
 public class main {
