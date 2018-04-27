@@ -51,6 +51,7 @@ class indi{
 	@SuppressWarnings("deprecation")
 	Map<String, Double> coef = new HashMap<String, Double>();
 	
+	double time;
 	boolean isParent = false;
 	String reason;
 	int cross = 0;
@@ -110,6 +111,7 @@ class indi{
 
 class experiment{
 	String[] coefNames = {"kp", "kd", "ki", "c"};
+	double maxtime;
 	indi curGen[] = {new indi(1.7, 3.8, 0.003, 30, 1),
 			  	 new indi(1.6, 3.9, 0.003, 35, 1),
 			  	 new indi(1.3, 3.6, 0.004, 28, 1),
@@ -120,11 +122,11 @@ class experiment{
 			  	 new indi(1.1, 3.1, 0.006, 45, 1),
 			  	 new indi(1.3, 3.6, 0.004, 28, 1),
 			  	 new indi(1.6, 3.9, 0.003, 34, 1)};
-	indi tempGen[] = {};
 	indi[] selection() {
+		indi tempGen[] = {};
 		for(int i = 0; i<= curGen.length; i++) {
 			curGen[i].run();
-			if(curGen[i].reason == "Success") {
+			if(isAlive(curGen[i])) {
 				if(tempGen.length == 0) {
 					tempGen[0] = curGen[i];
 				} else if(tempGen.length == 1) {
@@ -139,19 +141,28 @@ class experiment{
 	}
 	
 	indi[] cross(indi gen[]) {
-		int[][] indexes = choose(gen);
-		indi[] result = {};
-		for(int i = 0; i<indexes.length; i++) {
-			if(result.length==0) {
-				result[0] = dichC(gen[indexes[i][1]], gen[indexes[i][2]]);
-			} else if (result.length == 1) {
-				result[1] = dichC(gen[indexes[i][1]], gen[indexes[i][2]]);
-			} else {
-				result[result.length-1] = dichC(gen[indexes[i][1]], gen[indexes[i][2]]);
+		indi tempGen[] = {};
+		int flag = 0;
+		indi i1 = null;
+		indi i2 = null;
+		for(indi ind: gen) {
+			if(!ind.isParent) {
+				if(flag == 0) {
+					i1 = ind;
+				} else if(flag == 1) {
+					i2 = ind;
+					if(tempGen.length == 0) {
+						tempGen[0] = dichC(i1, i2);
+					} else if(tempGen.length == 1) {
+						tempGen[1] = dichC(i1, i2);
+					} else {
+						tempGen[tempGen.length-1] = dichC(i1, i2);
+					}
+				}
 			}
 		}
 		
-		return result;
+		return tempGen;
 	}
 	
 	indi dichC(indi i1, indi i2) {
@@ -173,47 +184,37 @@ class experiment{
 	void run() {
 		writer w = new writer();
 		for(int j = 0; j<=9; j++) {
-			for(int i = 0; i<=9; i++) {
+			for(int i = 0; i<=curGen.length; i++) {
 				curGen[i].run();
+				
 				w.fw(curGen[i]);
 				LCD.drawString("To run next individual\n press any button", 31, 4);
 				Button.waitForAnyPress();
 			}
+			curGen = selection();
 			curGen = cross(curGen);
 			
 		}
 	}
 	
-	int[][] choose(indi[] gen) {
-        int[][] result = new int[gen.length / 2][2];
-        mix(gen);
- 
-        int index = 0;
-        for (int i = 0; i < result.length; i++) {
-            for (int j = 0; j < 2; j++) {
-                result[i][j] = gen[index++];
-                System.out.print(result[i][j] + "\t");
-            }
-            System.out.println();
-        }
-        return result;
+	boolean isAlive(indi ind) {
+		if(ind.time < maxtime && ind.reason == "Success") {
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
-    private void mix(int[] a) {
-        Random rnd = new Random();
-        for (int i = 1; i < a.length; i++) {
-            int j = rnd.nextInt(i);
-            int temp = a[i];
-            a[i] = a[j];
-            a[j] = temp;
-        }
-    }
 }
 
 public class main {
 	
 	public static void main(String[] args) {
-		
+//		experiment e = new experiment();
+//		e.run();
+		Button.waitForAnyPress();
+		indi test = new indi(1.7, 3.8, 0.003, 30, 1);
+		test.run();
 	}
 
 }
