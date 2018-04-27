@@ -1,7 +1,7 @@
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
+import java.io.*;
 import lejos.nxt.Button;
 import lejos.nxt.ButtonListener;
 import lejos.nxt.LCD;
@@ -10,6 +10,37 @@ import lejos.nxt.Motor;
 import lejos.nxt.MotorPort;
 import lejos.nxt.NXTMotor;
 import lejos.nxt.SensorPort;
+
+class writer {
+	void fw(indi obj) {
+		FileOutputStream fos = null;
+		File inform = new File("inf.txt");
+		
+	    try {
+	        fos = new FileOutputStream(inform, true);
+	    } catch(IOException ex) {
+	      	System.err.println("Failed to create output stream");
+	      	Button.waitForAnyPress();
+	      	System.exit(1);
+	    }
+	    
+	    DataOutputStream dOut = new DataOutputStream(fos);
+	    
+	    try {
+	    	dOut.writeChars("KP:" + obj.coef.get("kp").toString() + "\n");
+	    	dOut.writeChars("KD:" + obj.coef.get("kd").toString() + "\n");
+	    	dOut.writeChars("KI:" + obj.coef.get("ki").toString() + "\n");
+	    	dOut.writeChars("C:" + obj.coef.get("c").toString() + "\n");
+	    	dOut.writeChars("ID:" + obj.id + "\n");
+	    	dOut.writeChars("POKOLENIE:" + obj.pok + "\n");
+	    	fos.close();
+	    } catch(IOException ex) {
+	    	System.err.println("Failed to write line into the file");
+	    	Button.waitForAnyPress();
+	    	System.exit(1);
+	    }
+	}
+}
 
 class indi{
 	LightSensor RLight = new LightSensor(SensorPort.S1);
@@ -33,7 +64,6 @@ class indi{
 		double d = 0;
 		double pwrR = 0;
 		double pwrL = 0;
-		
 		double err = RLight.readValue() - LLight.readValue();
 		i += err;
 		d = ePr-err;
@@ -95,7 +125,9 @@ class experiment{
 		for(int i = 0; i<= curGen.length; i++) {
 			curGen[i].run();
 			if(curGen[i].reason == "Success") {
-				if(tempGen.length==0) {
+				if(tempGen.length == 0) {
+					tempGen[0] = curGen[i];
+				} else if(tempGen.length == 1) {
 					tempGen[1] = curGen[i];
 				} else {
 					tempGen[tempGen.length-1] = curGen[i];
@@ -106,30 +138,76 @@ class experiment{
 		return tempGen;
 	}
 	
-	indi[] cross() {
-		
-	}
-	
-	indi dichC(indi i1, indi i2) {
-		indi result = null;
-		Random rnd = new Random();
-		for(String tcoef : coefNames) {
-			if(rnd.nextInt(2)==0) {
-				result.coef.put(tcoef, i1.coef.get(tcoef)); 
+	indi[] cross(indi gen[]) {
+		int[][] indexes = choose(gen);
+		indi[] result = {};
+		for(int i = 0; i<indexes.length; i++) {
+			if(result.length==0) {
+				result[0] = dichC(gen[indexes[i][1]], gen[indexes[i][2]]);
+			} else if (result.length == 1) {
+				result[1] = dichC(gen[indexes[i][1]], gen[indexes[i][2]]);
+			} else {
+				result[result.length-1] = dichC(gen[indexes[i][1]], gen[indexes[i][2]]);
 			}
 		}
 		
 		return result;
 	}
 	
-	int[][] choose(indi[] gen) {
-		int result[][];
-		if(curGen.length%2 == 0) {
-			for(int i = 0; i<curGen.length; i++) {
-				
+	indi dichC(indi i1, indi i2) {
+		indi result = new indi(0,0,0,0,i1.pok+1);
+		Random rnd = new Random();
+		for(String tcoef : coefNames) {
+			if(rnd.nextInt(2)==0) {
+				result.coef.remove(tcoef);
+				result.coef.put(tcoef, i1.coef.get(tcoef)); 
+			} else if(rnd.nextInt(2) == 1) {
+				result.coef.remove(tcoef);
+				result.coef.put(tcoef, i2.coef.get(tcoef)); 
 			}
 		}
+		
+		return result;
 	}
+	
+	void run() {
+		writer w = new writer();
+		for(int j = 0; j<=9; j++) {
+			for(int i = 0; i<=9; i++) {
+				curGen[i].run();
+				w.fw(curGen[i]);
+				LCD.drawString("To run next individual\n press any button", 31, 4);
+				Button.waitForAnyPress();
+			}
+			curGen = cross(curGen);
+			
+		}
+	}
+	
+	int[][] choose(indi[] gen) {
+        int[][] result = new int[gen.length / 2][2];
+        mix(gen);
+ 
+        int index = 0;
+        for (int i = 0; i < result.length; i++) {
+            for (int j = 0; j < 2; j++) {
+                result[i][j] = gen[index++];
+                System.out.print(result[i][j] + "\t");
+            }
+            System.out.println();
+        }
+        return result;
+	}
+	
+    private void mix(int[] a) {
+        Random rnd = new Random();
+        for (int i = 1; i < a.length; i++) {
+            int j = rnd.nextInt(i);
+            int temp = a[i];
+            a[i] = a[j];
+            a[j] = temp;
+        }
+    }
 }
 
 public class main {
