@@ -1,7 +1,12 @@
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.io.*;
+
 import lejos.nxt.Button;
 import lejos.nxt.ButtonListener;
 import lejos.nxt.LCD;
@@ -88,6 +93,8 @@ class indi{
 			}
 		}
 		reason = "Success";
+		RMotor.stop();
+		LMotor.stop();
 	}
 	public indi(double op, double od, double oi, double oc, int opok) {
 		Button.ENTER.addButtonListener(new ButtonListener() {
@@ -112,36 +119,25 @@ class indi{
 class experiment{
 	String[] coefNames = {"kp", "kd", "ki", "c"};
 	double maxtime;
-	indi curGen[] = {new indi(1.7, 3.8, 0.003, 30, 1),
-			  	 new indi(1.6, 3.9, 0.003, 35, 1),
-			  	 new indi(1.3, 3.6, 0.004, 28, 1),
-			  	 new indi(1.4, 4.0, 0.001, 31, 1),
-			  	 new indi(1.8, 3.7, 0.002, 40, 1),
-			  	 new indi(1.5, 3.5, 0.005, 29, 1),
-			  	 new indi(1.2, 3.5, 0.003, 32, 1),
-			  	 new indi(1.1, 3.1, 0.006, 45, 1),
-			  	 new indi(1.3, 3.6, 0.004, 28, 1),
-			  	 new indi(1.6, 3.9, 0.003, 34, 1)};
-	indi[] selection() {
-		indi tempGen[] = {};
-		for(int i = 0; i<= curGen.length; i++) {
-			curGen[i].run();
-			if(isAlive(curGen[i])) {
-				if(tempGen.length == 0) {
-					tempGen[0] = curGen[i];
-				} else if(tempGen.length == 1) {
-					tempGen[1] = curGen[i];
-				} else {
-					tempGen[tempGen.length-1] = curGen[i];
-				}
+	ArrayList<indi> curGen = new ArrayList<>();
+	
+	experiment(ArrayList<indi> ar) {
+		curGen = ar;
+	}		  	 
+	ArrayList<indi> selection() {
+		ArrayList<indi> tempGen = new ArrayList<>();
+		for(int i = 0; i<= curGen.size(); i++) {
+			curGen.get(i).run();
+			if(isAlive(curGen.get(i))) {
+				tempGen.add(curGen.get(i));
 			}
 		}
 		
 		return tempGen;
 	}
 	
-	indi[] cross(indi gen[]) {
-		indi tempGen[] = {};
+	ArrayList<indi> cross(ArrayList<indi> gen) {
+		ArrayList<indi> tempGen = new ArrayList<>();
 		int flag = 0;
 		indi i1 = null;
 		indi i2 = null;
@@ -151,13 +147,7 @@ class experiment{
 					i1 = ind;
 				} else if(flag == 1) {
 					i2 = ind;
-					if(tempGen.length == 0) {
-						tempGen[0] = dichC(i1, i2);
-					} else if(tempGen.length == 1) {
-						tempGen[1] = dichC(i1, i2);
-					} else {
-						tempGen[tempGen.length-1] = dichC(i1, i2);
-					}
+					tempGen.add(dichC(i1,i2));
 				}
 			}
 		}
@@ -184,10 +174,10 @@ class experiment{
 	void run() {
 		writer w = new writer();
 		for(int j = 0; j<=9; j++) {
-			for(int i = 0; i<=curGen.length; i++) {
-				curGen[i].run();
+			for(int i = 0; i<=curGen.size(); i++) {
+				curGen.get(i).run();
 				
-				w.fw(curGen[i]);
+				w.fw(curGen.get(i));
 				LCD.drawString("To run next individual\n press any button", 31, 4);
 				Button.waitForAnyPress();
 			}
@@ -210,11 +200,21 @@ class experiment{
 public class main {
 	
 	public static void main(String[] args) {
-//		experiment e = new experiment();
-//		e.run();
+		ArrayList<indi> pok1 = new ArrayList<>();
+		pok1.add(new indi(1.7, 3.8, 0.003, 30, 1));
+		pok1.add(new indi(1.6, 3.9, 0.003, 35, 1));
+//		 new indi(1.3, 3.6, 0.004, 28, 1)
+//	  	 new indi(1.4, 4.0, 0.001, 31, 1)
+//	  	 new indi(1.8, 3.7, 0.002, 40, 1)
+//	  	 new indi(1.5, 3.5, 0.005, 29, 1)
+//	  	 new indi(1.2, 3.5, 0.003, 32, 1)
+//	  	 new indi(1.1, 3.1, 0.006, 45, 1)
+//	  	 new indi(1.3, 3.6, 0.004, 28, 1)
+//	  	 new indi(1.6, 3.9, 0.003, 34, 1)
+		
 		Button.waitForAnyPress();
-		indi test = new indi(1.7, 3.8, 0.003, 30, 1);
-		test.run();
+		experiment e = new experiment(pok1);
+		e.run();
 	}
 
 }
