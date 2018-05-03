@@ -9,13 +9,12 @@ import java.util.Random;
 
 import lejos.nxt.Button;
 import lejos.nxt.ButtonListener;
-import lejos.nxt.LCD;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.MotorPort;
 import lejos.nxt.NXTMotor;
 import lejos.nxt.SensorPort;
-import lejos.nxt.comm.RConsole;
+import lejos.nxt.Sound;
 import lejos.util.Delay;
 import lejos.util.Stopwatch;
 
@@ -42,12 +41,27 @@ class writer {
 	    	dOut.writeChars("REASON:" + obj.reason + "\n");
 	    	dOut.writeChars("ID:" +obj.id + "\n");
 	    	dOut.writeChars("POKOLENIE:" + obj.pok + "\n");
+	    	dOut.writeChars("TIME:" + obj.time + "\n");
 	    	fos.close();
 	    } catch(IOException ex) {
 	    	System.err.println("Failed to write line into the file");
 	    	Button.waitForAnyPress();
 	    	System.exit(1);
 	    }
+	}
+	
+	public void message(String msg) {
+		FileOutputStream fs = null;
+		File log = new File("mylog.txt");
+		
+		try {
+			fs = new FileOutputStream(log, true);
+			DataOutputStream out = new DataOutputStream(fs);
+			out.writeChars(msg + "\n");
+			out.close();
+		} catch(IOException ex) {
+			
+		}
 	}
 }
 
@@ -62,7 +76,7 @@ class indi{
 	
 	int time;
 	boolean isParent = false;
-	String reason;
+	boolean reason;
 	int cross = 0;
 	int ePr = 0;
 	public boolean flag = false;
@@ -83,53 +97,39 @@ class indi{
 		Motor.B.suspendRegulation();
 		RMotor.setPower((int) pwrR);
 		LMotor.setPower((int) pwrL);
-		if(RLight.readValue()<35 && LLight.readValue()<35) {
+		if(RLight.readValue()<40 && LLight.readValue()<40) {
 			 cross+=1;
+			 Sound.systemSound(true, 0);
+				switch(cross) {
+				case 1:
+					RMotor.setPower(50);
+					LMotor.setPower(50);
+					RMotor.forward();
+					LMotor.forward();
+					Delay.msDelay(500);
+				
+				}
 		}
 		
-		switch(cross) {
-		case 1:
-			RMotor.setPower(50);
-			LMotor.setPower(50);
-			RMotor.forward();
-			LMotor.forward();
-			Delay.msDelay(500);
-		
-		}
-	}
-	public void message(String msg) {
-		FileOutputStream fs = null;
-		File log = new File("mylog.txt");
-		
-		try {
-			fs = new FileOutputStream(log, true);
-			DataOutputStream out = new DataOutputStream(fs);
-			out.writeChars(id + " " + pok + " " + cross + " " + msg + "\n");
-			out.close();
-		} catch(IOException ex) {
-			
-		}
-	}
-	
+	}	
 	public void run() {
-		message("run start");
+		writer w = new writer();
+		w.message(id + " " + pok + " " + cross + " " + "run start");
+		Delay.msDelay(1000);
 		Stopwatch sw = new Stopwatch();
-		reason = "Success";
+		reason = true;
 		while(cross<2) {
-			message("while bf pid()");
 			pid();
-			message("while af pid()");
 			if(Button.ENTER.isPressed()) {
-				message("Pass into button press");
-				reason = "Fail";
+				w.message(id + " " + pok + " " + cross + " " + "passed into buttonPress");
+				reason = false;
 				break;
 			}
 		}
 		time = sw.elapsed();
 		RMotor.stop();
 		LMotor.stop();
-		message("Exitting run()");
-		return;
+		w.message(id + " " + pok + " " + cross + " " + "exitting run()");
 	}
 	public indi(double op, double od, double oi, double oc, int opok) {
 		id = cnt;
@@ -144,48 +144,63 @@ class indi{
 
 class experiment{
 	String[] coefNames = {"kp", "kd", "ki", "c"};
-	double maxtime;
+	int maxtime = 100000;
+	int n;
 	String fPath;
 	ArrayList<indi> curGen = new ArrayList<>();
 	
-	experiment(ArrayList<indi> ar, String path) {
+	experiment(ArrayList<indi> ar, String path, int numgen) {
 		curGen = ar;
 		fPath = path;
+		n = numgen;
 	}		  	 
 	ArrayList<indi> selection() {
+		Sound.systemSound(true, 1);
+		writer w = new writer();
 		ArrayList<indi> tempGen = new ArrayList<>();
 		for(int i = 0; i < curGen.size(); i++) {
-			curGen.get(i).run();
 			if(isAlive(curGen.get(i))) {
 				tempGen.add(curGen.get(i));
+				w.message("IsAlive = TRUE");
+			} else {
+				w.message("IsAlive = FALSE");
 			}
 		}
+		w.message("LengthAfterSelection:" + tempGen.size());
 		return tempGen;
 	}
 	
 	ArrayList<indi> cross(ArrayList<indi> gen) {
+		Sound.systemSound(true, 4);
 		ArrayList<indi> tempGen = new ArrayList<>();
-		int flag = 0;
+		writer w = new writer();
+		int countInd = 0;
 		indi i1 = null;
 		indi i2 = null;
 		for(indi ind: gen) {
 			if(!ind.isParent) {
-				if(flag == 0) {
+				if(countInd == 0) {
 					i1 = ind;
-				} else if(flag == 1) {
+					ind.isParent = true;
+					countInd++;
+				} else if(countInd == 1) {
 					i2 = ind;
+					ind.isParent = true;
 					tempGen.add(dichC(i1,i2));
+					countInd = 0;
 				}
 			}
 		}
-		
+		w.message("LengthAfterCross:" + tempGen.size());
 		return tempGen;
 	}
 	
 	indi dichC(indi i1, indi i2) {
 		indi result = new indi(0,0,0,0,i1.pok+1);
+		writer w = new writer();
 		Random rnd = new Random();
 		for(String tcoef : coefNames) {
+			w.message(tcoef);
 			if(rnd.nextInt(2)==0) {
 				result.coef.remove(tcoef);
 				result.coef.put(tcoef, i1.coef.get(tcoef)); 
@@ -194,32 +209,40 @@ class experiment{
 				result.coef.put(tcoef, i2.coef.get(tcoef)); 
 			}
 		}
-		result.pok++;
 		return result;
 	}
 	
 	void run() {
 		writer w = new writer();
-		for(int j = 0; j<=9; j++) {
+		for(int j = 0; j<=n-1; j++) {
 			for(int i = 0; i<curGen.size(); i++) {
 				curGen.get(i).run();
 				
 				w.fw(curGen.get(i), fPath);
-				LCD.drawString("To run next", 31, 1);
-				LCD.drawString("Individual", 31, 2);
-				LCD.drawString("Press any button", 31, 3);
 				Button.waitForAnyPress();
 			}
+			w.message("Generating new gen");
+			Sound.systemSound(true, 3);
 			curGen = selection();
+			w.message("CurGenLength:" + curGen.size());
 			curGen = cross(curGen);
+			Sound.systemSound(true, 2);
+			w.message("new gen completed");
 			
 		}
 	}
 	
 	boolean isAlive(indi ind) {
-		if(/*ind.time < maxtime &&*/ ind.reason == "Success") {
+		writer w = new writer();
+		w.message("IA TIME:" + ind.time + " REASON:" + ind.reason + " MAXTIME:" + maxtime);
+		if(ind.time < maxtime && ind.reason) {
+			Sound.playTone(1200, 2000);
 			return true;
 		} else {
+			Sound.playTone(500, 500);
+			Sound.playTone(400, 500);
+			Sound.playTone(300, 500);
+			Sound.playTone(200, 500);
 			return false;
 		}
 	}
@@ -243,18 +266,18 @@ public class main {
 			}});
 		
 		ArrayList<indi> pok1 = new ArrayList<>();
-		pok1.add(new indi(1.7, 3.8, 0.003, 30, 1));
-		pok1.add(new indi(1.6, 3.9, 0.003, 35, 1));
-		pok1.add(new indi(1.3, 3.6, 0.004, 28, 1));
-		pok1.add(new indi(1.4, 4.0, 0.001, 31, 1));
+		pok1.add(new indi(1.7, 3.8, 0.003, 40, 1));
+		pok1.add(new indi(1.6, 3.9, 0.003, 45, 1));
+		pok1.add(new indi(1.3, 3.6, 0.004, 70, 1));
+		pok1.add(new indi(0.9, 4.0, 0.001, 41, 1));
 		pok1.add(new indi(1.8, 3.7, 0.002, 40, 1));
-		pok1.add(new indi(1.5, 3.5, 0.005, 29, 1));
-		pok1.add(new indi(1.2, 3.5, 0.003, 32, 1));
-		pok1.add(new indi(1.1, 3.1, 0.006, 45, 1));
-		pok1.add(new indi(1.3, 3.6, 0.004, 28, 1));
-		pok1.add(new indi(1.6, 3.9, 0.003, 34, 1));
+		pok1.add(new indi(1.5, 3.5, 0.005, 60, 1));
+		pok1.add(new indi(1.2, 2, 0.003, 42, 1));
+		pok1.add(new indi(1.1, 3.1, 0.006, 55, 1));
+		pok1.add(new indi(1.3, 3.6, 0.004, 38, 1));
+		pok1.add(new indi(1.6, 3.9, 0.03, 44, 1));
 		Button.waitForAnyPress();
-		experiment e = new experiment(pok1, "test");
+		experiment e = new experiment(pok1, "result", 10);
 		e.run();
 	}
 
