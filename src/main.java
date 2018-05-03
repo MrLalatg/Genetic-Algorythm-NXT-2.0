@@ -146,13 +146,15 @@ class experiment{
 	String[] coefNames = {"kp", "kd", "ki", "c"};
 	int maxtime = 100000;
 	int n;
+	boolean mut;
 	String fPath;
 	ArrayList<indi> curGen = new ArrayList<>();
 	
-	experiment(ArrayList<indi> ar, String path, int numgen) {
+	experiment(ArrayList<indi> ar, String path, int numgen, boolean mutation) {
 		curGen = ar;
 		fPath = path;
 		n = numgen;
+		mut = mutation;
 	}		  	 
 	ArrayList<indi> selection() {
 		Sound.systemSound(true, 1);
@@ -168,6 +170,20 @@ class experiment{
 		}
 		w.message("LengthAfterSelection:" + tempGen.size());
 		return tempGen;
+	}
+	
+	indi mutate(indi obj) {
+		obj.coef.put("kp", mutateRange(obj.coef.get("kp"), obj.coef.get("kp")-0.5, obj.coef.get("kp")+0.5));
+		obj.coef.put("kd", mutateRange(obj.coef.get("kd"), obj.coef.get("kd")-1.5, obj.coef.get("kd")+1.5));
+		obj.coef.put("ki", mutateRange(obj.coef.get("ki"), obj.coef.get("ki")-0.005, obj.coef.get("ki")+0.005));
+		obj.coef.put("c", mutateRange(obj.coef.get("c"), obj.coef.get("c")-5, 100));
+		return obj;
+	}
+	
+	double mutateRange(double coef, double min, double max) {
+		Random rnd = new Random();
+		double result = min + (max - min) * rnd.nextDouble();
+		return result;
 	}
 	
 	ArrayList<indi> cross(ArrayList<indi> gen) {
@@ -208,6 +224,9 @@ class experiment{
 				result.coef.remove(tcoef);
 				result.coef.put(tcoef, i2.coef.get(tcoef)); 
 			}
+		}
+		if(mut) {
+			result = mutate(result);
 		}
 		return result;
 	}
@@ -277,7 +296,7 @@ public class main {
 		pok1.add(new indi(1.3, 3.6, 0.004, 38, 1));
 		pok1.add(new indi(1.6, 3.9, 0.03, 44, 1));
 		Button.waitForAnyPress();
-		experiment e = new experiment(pok1, "result", 10);
+		experiment e = new experiment(pok1, "result", 10, true);
 		e.run();
 	}
 
